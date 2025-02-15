@@ -170,3 +170,71 @@ If you want to download the output to your local machine:
 hdfs dfs -get /output_final /path/to/local/output
 ```
 ---
+
+### **Approach & Implementation**  
+This project is designed to measure how similar different documents are using Hadoop MapReduce. The process follows these steps:
+
+1. The Mapper (DocumentSimilarityMapper)
+Reads each document, extracts its unique words, and outputs them along with the document ID.
+Think of it as sorting through each document and making a list of all the words it contains—just without duplicates.
+2. The Reducer (DocumentSimilarityReducer)
+Gathers the words from each document and compares them with other documents.
+It calculates Jaccard similarity, which is a fancy way of saying:
+How many words do the two documents share? (Intersection)
+How many words are in either document? (Union)
+Similarity Score = Intersection / Union
+Finally, it outputs document pairs along with their similarity scores.
+3. The Driver (DocumentSimilarityDriver)
+This is like the project manager—it sets everything up and makes sure the Mapper and Reducer run smoothly.
+It tells Hadoop where to find the input files, which Java classes to use, and where to store the results.
+
+
+### **How to Run the Project (Step-by-Step Guide)**  
+1. Get the Code
+git clone https://github.com/Cloud-Computing-Spring-2025/assignment-1-mapreduce-document-similarity-Manisha8901.git
+cd assignment-1-mapreduce-document-similarity-Manisha8901
+2. Build the Project
+mvn clean package
+This compiles the Java code and creates a .jar file, which is needed to run the job.
+
+3. Start Hadoop Inside Docker
+docker-compose up -d
+This starts all the necessary Hadoop services in the background.
+
+4. Move the Files into Hadoop
+docker cp target/DocumentSimilarity-0.0.1-SNAPSHOT.jar resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
+docker cp Input/input resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/
+This ensures the program and input data are available inside the Hadoop container.
+
+5. Run the Hadoop Job
+docker exec -it resourcemanager /bin/bash
+hadoop fs -mkdir -p /input/dataset
+hadoop fs -put /opt/hadoop-3.2.1/share/hadoop/mapreduce/input /input/dataset/
+hadoop jar /opt/hadoop-3.2.1/share/hadoop/mapreduce/DocumentSimilarity-0.0.1-SNAPSHOT.jar \
+com.example.controller.DocumentSimilarityDriver /input/dataset /output
+This tells Hadoop to start processing the files using our DocumentSimilarityDriver.
+
+6. See the Results
+hadoop fs -cat /output/part-r-00000
+hdfs dfs -get /output /opt/hadoop-3.2.1/share/hadoop/mapreduce/
+docker cp resourcemanager:/opt/hadoop-3.2.1/share/hadoop/mapreduce/output/ output/
+cat output/part-r-00000
+These commands help fetch and display the final output, showing the similarity scores for each document pair.
+
+
+### **Challenges We Faced & How We Solved Them**  
+1. File Format Confusion
+At first, the program couldn’t properly separate document IDs from their content.
+Solution: Used a proper string split method to ensure the document ID and content were extracted correctly.
+2. Files Not Found Errors
+Hadoop kept complaining that the files didn’t exist.
+Solution: Double-checked file paths and made sure the hadoop fs -put commands actually copied them correctly.
+3. Incorrect Similarity Scores
+The initial calculation didn’t correctly count words that were in both documents.
+Solution: Used Java’s built-in set operations (retainAll() for intersection and addAll() for union) to ensure the similarity was computed correctly.
+
+
+
+
+
+
